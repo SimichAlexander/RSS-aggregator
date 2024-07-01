@@ -1,0 +1,26 @@
+{
+  "name": "@hexlet/code",
+  "version": "1.0.0",
+  "description": "[![Actions Status](https://github.com/SimichAlexander/frontend-project-11/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/SimichAlexander/frontend-project-11/actions)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SimichAlexander/frontend-project-11.git"
+  },
+  "author": "Alexander Simich",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SimichAlexander/frontend-project-11/issues"
+  },
+  "homepage": "https://github.com/SimichAlexander/frontend-project-11#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.6.0",
+    "eslint": "^9.6.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "globals": "^15.7.0"
+  }
+}
