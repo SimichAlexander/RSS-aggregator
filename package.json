@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/SimichAlexander/frontend-project-11#readme",
   "devDependencies": {
+    "@babel/preset-env": "^7.24.7",
     "@eslint/js": "^8.6.0",
     "css-loader": "^7.1.2",
     "eslint": "^8.6.0",
