@@ -5,6 +5,7 @@ import * as yup from 'yup';
 import onChange from 'on-change';
 import keyBy from 'lodash/keyBy.js';
 import isEmpty from 'lodash/isEmpty.js';
+import i18next from 'i18next';
 
 const validate = (fields) => {
   try {
@@ -14,6 +15,21 @@ const validate = (fields) => {
     return keyBy(e.inner, 'path');
   }
 };
+
+const i18nextInstance = i18next.createInstance();
+await i18nextInstance.init({
+  lng: 'ru',
+  debug: true,
+  resources: {
+    ru: {
+      translation: {
+        success: 'RSS успешно загружен',
+        duplicate: 'RSS уже существует',
+        validity: 'Ссылка должна быть валидным URL',
+      },
+    },
+  },
+});
 
 const state = {
   form: {
@@ -58,16 +74,16 @@ form.addEventListener('submit', (e) => {
   if (isEmpty(validate(state.form.url))) {
     if (!state.form.list.includes(state.form.url)) {
       watchedState.form.state = 'valid';
-      watchedState.form.error = 'RSS успешно загружен';
+      watchedState.form.error = i18nextInstance.t('success');
       form.reset();
       input.focus();
       state.form.list.push(watchedState.form.url);
     } else {
       watchedState.form.state = 'invalid';
-      watchedState.form.error = 'RSS уже существует';
+      watchedState.form.error = i18nextInstance.t('duplicate');
     }
   } else {
     watchedState.form.state = 'invalid';
-    watchedState.form.error = 'Ссылка должна быть валидным URL';
+    watchedState.form.error = i18nextInstance.t('validity');
   }
 });
