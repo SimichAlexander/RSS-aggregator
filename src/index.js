@@ -2,12 +2,93 @@ import './styles.scss';
 import 'bootstrap';
 
 import * as yup from 'yup';
-import * as _ from 'lodash';
+// import * as _ from 'lodash';
 import onChange from 'on-change';
 import keyBy from 'lodash/keyBy.js';
 import uniqueId from 'lodash';
 import isEmpty from 'lodash/isEmpty.js';
 import i18next from 'i18next';
+
+const queryFunc = () => {
+  fetch(
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+      state.form.url
+    )}`
+  )
+    .then((response) => {
+      if (response.ok) return response.json();
+      throw new Error('Network response was not ok.');
+    })
+    .then((data) => {
+      const textFile = parserFunc(data.contents);
+      ulElFeeds.prepend(
+        createFeedsElement(
+          textFile.querySelector('title').textContent,
+          textFile.querySelector('description').textContent
+        )
+      );
+      const items = textFile.querySelectorAll('item');
+      items.forEach((item) => {
+        const link = item.querySelector('link').textContent;
+        state.form.postList.push(link);
+        ulElPosts.append(
+          createPostsElement(
+            item.querySelector('title').textContent,
+            item.querySelector('description').textContent,
+            item.querySelector('link').textContent
+          )
+        );
+      });
+      const modalButtons = document.querySelectorAll(
+        'button[data-bs-toggle="modal"]'
+      );
+    });
+};
+
+const delayQueryFunc = (feedUrl) => {
+  fetch(
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+      feedUrl
+    )}`
+  )
+    .then((response) => {
+      if (response.ok) return response.json();
+      throw new Error('Network response was not ok.');
+    })
+    .then((data) => {
+      const textFile = parserFunc(data.contents);
+      const items = textFile.querySelectorAll('item');
+      items.forEach((item) => {
+        if (
+          !state.form.postList.includes(item.querySelector('link').textContent)
+        ) {
+          state.form.postList.push(item.querySelector('link').textContent);
+          ulElPosts.prepend(
+            createPostsElement(
+              item.querySelector('title').textContent,
+              item.querySelector('description').textContent,
+              item.querySelector('link').textContent
+            )
+          );
+        }
+      });
+      const modalButtons = document.querySelectorAll(
+        'button[data-bs-toggle="modal"]'
+      );
+    });
+};
+
+const delay = () => {
+  console.log('Delayed for 5 seconds.');
+  if (state.form.feedList.length !== 0) {
+    state.form.feedList.forEach((item) => {
+      delayQueryFunc(item);
+    });
+  }
+  setTimeout(() => {
+    delay();
+  }, 5000);
+};
 
 const parserFunc = (data) => {
   const parser = new DOMParser();
@@ -29,8 +110,7 @@ const createFeedsElement = (title, description) => {
 };
 
 const createPostsElement = (title, description, href) => {
-  const idData = _.uniqueId();
-  console.log(('UNIQE = ', idData));
+  const idData = uniqueId();
   const liEl = document.createElement('li');
   liEl.classList.add(
     'list-group-item',
@@ -75,7 +155,7 @@ const createPostsElement = (title, description, href) => {
     fullArticle.setAttribute('href', state.form.descriptionList[elId].link);
   });
   state.form.descriptionList[idData] = { description, link: href };
-  console.log(state);
+  // console.log(state);
   liEl.append(aEl, btnEl);
   return liEl;
 };
@@ -109,8 +189,9 @@ const state = {
     state: '',
     url: '',
     feedList: [],
+    postList: [],
     descriptionList: {},
-    error: '',
+    message: '',
   },
 };
 
@@ -121,7 +202,7 @@ const feedback = document.querySelector('.feedback');
 
 const feeds = document.querySelector('.feeds');
 const feedsCardTitle = feeds.querySelector('.card-title');
-const ulELFeeds = feeds.querySelector('ul');
+const ulElFeeds = feeds.querySelector('ul');
 
 const posts = document.querySelector('.posts');
 const postsCardTitle = posts.querySelector('.card-title');
@@ -136,44 +217,14 @@ const watchedState = onChange(state, (path, value) => {
       feedsCardTitle.textContent = 'Фиды';
       postsCardTitle.textContent = 'Посты';
 
-      fetch(
-        `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-          state.form.url
-        )}`
-      )
-        .then((response) => {
-          if (response.ok) return response.json();
-          throw new Error('Network response was not ok.');
-        })
-        .then((data) => {
-          const textFile = parserFunc(data.contents);
-          ulELFeeds.prepend(
-            createFeedsElement(
-              textFile.querySelector('title').textContent,
-              textFile.querySelector('description').textContent
-            )
-          );
-          const items = textFile.querySelectorAll('item');
-          items.forEach((item) => {
-            ulElPosts.append(
-              createPostsElement(
-                item.querySelector('title').textContent,
-                item.querySelector('description').textContent,
-                item.querySelector('link').textContent
-              )
-            );
-          });
-          const modalButtons = document.querySelectorAll(
-            'button[data-bs-toggle="modal"]'
-          );
-        });
+      queryFunc();
     } else {
       input.classList.add('is-invalid');
       feedback.classList.remove('text-success');
       feedback.classList.add('text-danger');
     }
   }
-  if (path === 'form.error') {
+  if (path === 'form.message') {
     feedback.textContent = value;
   }
 });
@@ -190,16 +241,20 @@ form.addEventListener('submit', (e) => {
     if (!state.form.feedList.includes(state.form.url)) {
       watchedState.form.state = 'invalid';
       watchedState.form.state = 'valid';
-      watchedState.form.error = i18nextInstance.t('success');
+      watchedState.form.message = i18nextInstance.t('success');
       form.reset();
       input.focus();
       state.form.feedList.push(watchedState.form.url);
     } else {
       watchedState.form.state = 'invalid';
-      watchedState.form.error = i18nextInstance.t('duplicate');
+      watchedState.form.message = i18nextInstance.t('duplicate');
     }
   } else {
     watchedState.form.state = 'invalid';
-    watchedState.form.error = i18nextInstance.t('validity');
+    watchedState.form.message = i18nextInstance.t('validity');
   }
 });
+
+setTimeout(() => {
+  delay();
+}, 5000);
