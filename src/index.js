@@ -21,27 +21,32 @@ const queryFunc = () => {
     })
     .then((data) => {
       const textFile = parserFunc(data.contents);
-      ulElFeeds.prepend(
-        createFeedsElement(
-          textFile.querySelector('title').textContent,
-          textFile.querySelector('description').textContent
-        )
-      );
-      const items = textFile.querySelectorAll('item');
-      items.forEach((item) => {
-        const link = item.querySelector('link').textContent;
-        state.form.postList.push(link);
-        ulElPosts.append(
-          createPostsElement(
-            item.querySelector('title').textContent,
-            item.querySelector('description').textContent,
-            item.querySelector('link').textContent
+      if (textFile.querySelector('title') !== null) {
+        ulElFeeds.prepend(
+          createFeedsElement(
+            textFile.querySelector('title').textContent,
+            textFile.querySelector('description').textContent
           )
         );
-      });
-      const modalButtons = document.querySelectorAll(
-        'button[data-bs-toggle="modal"]'
-      );
+        const items = textFile.querySelectorAll('item');
+        items.forEach((item) => {
+          const link = item.querySelector('link').textContent;
+          state.form.postList.push(link);
+          ulElPosts.append(
+            createPostsElement(
+              item.querySelector('title').textContent,
+              item.querySelector('description').textContent,
+              item.querySelector('link').textContent
+            )
+          );
+        });
+        const modalButtons = document.querySelectorAll(
+          'button[data-bs-toggle="modal"]'
+        );
+      } else {
+        watchedState.form.state = 'invalid';
+        watchedState.form.message = i18nextInstance.t('validityRss');
+      }
     });
 };
 
@@ -79,7 +84,7 @@ const delayQueryFunc = (feedUrl) => {
 };
 
 const delay = () => {
-  console.log('Delayed for 5 seconds.');
+  // console.log('Delayed for 5 seconds.');
   if (state.form.feedList.length !== 0) {
     state.form.feedList.forEach((item) => {
       delayQueryFunc(item);
@@ -138,7 +143,7 @@ const createPostsElement = (title, description, href) => {
   btnEl.setAttribute('data-bs-toggle', 'modal');
   btnEl.setAttribute('data-bs-target', '#modal');
   btnEl.setAttribute('data-id', idData);
-  btnEl.textContent = 'Просмотр';
+  btnEl.textContent = i18nextInstance.t('viewing');
   btnEl.addEventListener('click', (e) => {
     aEl.classList.remove('fw-bold');
     aEl.classList.add('fw-normal', 'link-secondary');
@@ -155,7 +160,6 @@ const createPostsElement = (title, description, href) => {
     fullArticle.setAttribute('href', state.form.descriptionList[elId].link);
   });
   state.form.descriptionList[idData] = { description, link: href };
-  // console.log(state);
   liEl.append(aEl, btnEl);
   return liEl;
 };
@@ -178,7 +182,11 @@ await i18nextInstance.init({
       translation: {
         success: 'RSS успешно загружен',
         duplicate: 'RSS уже существует',
-        validity: 'Ссылка должна быть валидным URL',
+        // empty: 'Не должно быть пустым',
+        validityUrl: 'Ссылка должна быть валидным URL',
+        validityRss: 'Ресурс не содержит валидный RSS',
+        viewing: 'Просмотр',
+        networkError: 'Ошибка сети',
       },
     },
   },
@@ -251,7 +259,7 @@ form.addEventListener('submit', (e) => {
     }
   } else {
     watchedState.form.state = 'invalid';
-    watchedState.form.message = i18nextInstance.t('validity');
+    watchedState.form.message = i18nextInstance.t('validityUrl');
   }
 });
 
