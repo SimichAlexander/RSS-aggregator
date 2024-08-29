@@ -72,8 +72,11 @@ export default async () => {
       .then((data) => {
         const textFile = parserFunc(data.contents);
         if (textFile.querySelector('rss') !== null && textFile.querySelector('title') !== null) {
-          watchedState.form.feedList.push(textFile);
+          watchedState.form.state = 'valid';
+          watchedState.form.message = i18nextInstance.t('success');
+          state.form.urlList.push(state.form.currentUrl);
 
+          watchedState.form.feedList.push(textFile);
           const items = textFile.querySelectorAll('item');
           items.forEach((item) => {
             if (!state.form.postLinkList.includes(item.querySelector('link').textContent)) {
@@ -86,6 +89,9 @@ export default async () => {
           watchedState.form.state = 'invalid';
           watchedState.form.message = i18nextInstance.t('validityRss');
         }
+      })
+      .catch(() => {
+        watchedState.form.message = i18nextInstance.t('networkError');
       });
   };
 
@@ -226,9 +232,6 @@ export default async () => {
     state.form.currentUrl = url;
     if (isEmpty(validate(state.form.currentUrl))) {
       if (!state.form.urlList.includes(state.form.currentUrl)) {
-        watchedState.form.state = 'valid';
-        watchedState.form.message = i18nextInstance.t('success');
-        state.form.urlList.push(state.form.currentUrl);
         queryFunc(state.form.currentUrl);
       } else {
         watchedState.form.state = 'invalid';
