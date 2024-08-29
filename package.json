@@ -2,7 +2,7 @@
   "name": "@hexlet/code",
   "version": "1.0.0",
   "description": "[![Actions Status](https://github.com/SimichAlexander/frontend-project-11/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/SimichAlexander/frontend-project-11/actions)",
-  "main": "./bin/index.js",
+  "main": "./src/index.js",
   "type": "module",
   "scripts": {
     "test": "jest --colors"
@@ -34,7 +34,7 @@
     "html-webpack-plugin": "^5.5.0",
     "postcss-loader": "^7.2.4",
     "postcss-preset-env": "^7.8.3",
-    "sass": "^1.77.8",
+    "sass": "1.77.6",
     "sass-loader": "^16.0.1",
     "style-loader": "^3.3.1",
     "url-loader": "^4.1.1",
