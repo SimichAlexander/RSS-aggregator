@@ -71,7 +71,7 @@ export default async () => {
       })
       .then((data) => {
         const textFile = parserFunc(data.contents);
-        if (textFile.querySelector('title') !== null) {
+        if (textFile.querySelector('rss') !== null && textFile.querySelector('title') !== null) {
           watchedState.form.feedList.push(textFile);
 
           const items = textFile.querySelectorAll('item');
