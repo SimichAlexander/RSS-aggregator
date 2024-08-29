@@ -10,124 +10,10 @@ import isEmpty from 'lodash/isEmpty.js';
 import i18next from 'i18next';
 
 export default async () => {
-  const queryFunc = () => {
-    fetch(
-      `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-        state.form.url
-      )}`
-    )
-      .then((response) => {
-        if (response.ok) return response.json();
-        throw new Error('Network response was not ok.');
-      })
-      .then((data) => {
-        const textFile = parserFunc(data.contents);
-        if (textFile.querySelector('title') !== null) {
-          ulElFeeds.prepend(
-            createFeedsElement(
-              textFile.querySelector('title').textContent,
-              textFile.querySelector('description').textContent
-            )
-          );
-          const items = textFile.querySelectorAll('item');
-          items.forEach((item) => {
-            const link = item.querySelector('link').textContent;
-            state.form.postList.push(link);
-            ulElPosts.append(
-              createPostsElement(
-                item.querySelector('title').textContent,
-                item.querySelector('description').textContent,
-                item.querySelector('link').textContent
-              )
-            );
-          });
-          const modalButtons = document.querySelectorAll(
-            'button[data-bs-toggle="modal"]'
-          );
-        } else {
-          watchedState.form.state = 'invalid';
-          watchedState.form.message = i18nextInstance.t('validityRss');
-        }
-      });
-  };
-
-  const delayQueryFunc = (feedUrl) => {
-    fetch(
-      `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-        feedUrl
-      )}`
-    )
-      .then((response) => {
-        if (response.ok) return response.json();
-        throw new Error('Network response was not ok.');
-      })
-      .then((data) => {
-        const textFile = parserFunc(data.contents);
-        const items = textFile.querySelectorAll('item');
-        items.forEach((item) => {
-          if (
-            !state.form.postList.includes(
-              item.querySelector('link').textContent
-            )
-          ) {
-            state.form.postList.push(item.querySelector('link').textContent);
-            ulElPosts.prepend(
-              createPostsElement(
-                item.querySelector('title').textContent,
-                item.querySelector('description').textContent,
-                item.querySelector('link').textContent
-              )
-            );
-          }
-        });
-        const modalButtons = document.querySelectorAll(
-          'button[data-bs-toggle="modal"]'
-        );
-      });
-  };
-
-  const delay = () => {
-    // console.log('Delayed for 5 seconds.');
-    if (state.form.feedList.length !== 0) {
-      state.form.feedList.forEach((item) => {
-        delayQueryFunc(item);
-      });
-    }
-    setTimeout(() => {
-      delay();
-    }, 5000);
-  };
-
-  const parserFunc = (data) => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(data, 'application/xml');
-    return xmlDoc;
-  };
-
-  const createFeedsElement = (title, description) => {
-    const liEl = document.createElement('li');
-    liEl.classList.add('list-group-item', 'border-0', 'border-end-0');
-    const h3El = document.createElement('h3');
-    h3El.classList.add('h6', 'm-0');
-    h3El.textContent = title;
-    const pEl = document.createElement('p');
-    pEl.classList.add('m-0', 'small', 'text-black-50');
-    pEl.textContent = description;
-    liEl.append(h3El, pEl);
-    return liEl;
-  };
-
   const createPostsElement = (title, description, href) => {
     const idData = uniqueId();
     const liEl = document.createElement('li');
-    liEl.classList.add(
-      'list-group-item',
-      'd-flex',
-      'justify-content-between',
-      'align-items-start',
-      'border-0',
-      'border-end-0'
-    );
+    liEl.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
     const aEl = document.createElement('a');
     aEl.classList.add('fw-bold');
     aEl.setAttribute('href', href);
@@ -152,9 +38,7 @@ export default async () => {
       aEl.classList.add('fw-normal', 'link-secondary');
       const elId = btnEl.getAttribute('data-id');
       const modalTitle = document.querySelector('.modal-title');
-      modalTitle.textContent = document.querySelector(
-        `a[data-id="${elId}"]`
-      ).textContent;
+      modalTitle.textContent = document.querySelector(`a[data-id="${elId}"]`).textContent;
 
       const modalBody = document.querySelector('.modal-body');
       modalBody.textContent = state.form.descriptionList[elId].description;
@@ -165,6 +49,80 @@ export default async () => {
     state.form.descriptionList[idData] = { description, link: href };
     liEl.append(aEl, btnEl);
     return liEl;
+  };
+
+  const createFeedsElement = (title, description) => {
+    const liEl = document.createElement('li');
+    liEl.classList.add('list-group-item', 'border-0', 'border-end-0');
+    const h3El = document.createElement('h3');
+    h3El.classList.add('h6', 'm-0');
+    h3El.textContent = title;
+    const pEl = document.createElement('p');
+    pEl.classList.add('m-0', 'small', 'text-black-50');
+    pEl.textContent = description;
+    liEl.append(h3El, pEl);
+    return liEl;
+  };
+  const queryFunc = (url) => {
+    fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+      .then((response) => {
+        if (response.ok) return response.json();
+        throw new Error('Network response was not ok.');
+      })
+      .then((data) => {
+        const textFile = parserFunc(data.contents);
+        if (textFile.querySelector('title') !== null) {
+          watchedState.form.feedList.push(textFile);
+
+          const items = textFile.querySelectorAll('item');
+          items.forEach((item) => {
+            if (!state.form.postLinkList.includes(item.querySelector('link').textContent)) {
+              const link = item.querySelector('link').textContent;
+              state.form.postLinkList.push(link);
+              watchedState.form.postList.push(item);
+            }
+          });
+        } else {
+          watchedState.form.state = 'invalid';
+          watchedState.form.message = i18nextInstance.t('validityRss');
+        }
+      });
+  };
+
+  const delayQueryFunc = (url) => {
+    fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+      .then((response) => {
+        if (response.ok) return response.json();
+        throw new Error('Network response was not ok.');
+      })
+      .then((data) => {
+        const textFile = parserFunc(data.contents);
+        const items = textFile.querySelectorAll('item');
+        items.forEach((item) => {
+          if (!state.form.postLinkList.includes(item.querySelector('link').textContent)) {
+            const link = item.querySelector('link').textContent;
+            state.form.postLinkList.push(link);
+            watchedState.form.postList.push(item);
+          }
+        });
+      });
+  };
+
+  const delay = () => {
+    if (state.form.urlList.length !== 0) {
+      state.form.urlList.forEach((item) => {
+        delayQueryFunc(item);
+      });
+    }
+    setTimeout(() => {
+      delay();
+    }, 5000);
+  };
+
+  const parserFunc = (data) => {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(data, 'application/xml');
+    return xmlDoc;
   };
 
   const validate = (fields) => {
@@ -185,11 +143,11 @@ export default async () => {
         translation: {
           success: 'RSS успешно загружен',
           duplicate: 'RSS уже существует',
-          // empty: 'Не должно быть пустым',
+          // empty: 'Не должно быть пустым', // Форма и так не даёт отправить пустое поле
           validityUrl: 'Ссылка должна быть валидным URL',
           validityRss: 'Ресурс не содержит валидный RSS',
-          viewing: 'Просмотр',
-          networkError: 'Ошибка сети',
+          viewing: 'Просмотр', // (!) надо как-то обработать
+          networkError: 'Ошибка сети', // (!) надо как-то обработать
         },
       },
     },
@@ -198,15 +156,19 @@ export default async () => {
   const state = {
     form: {
       state: '',
-      url: '',
+      currentUrl: '',
+      urlList: [],
       feedList: [],
       postList: [],
+      postLinkList: [],
       descriptionList: {},
       message: '',
     },
   };
 
   const schema = yup.string().required().url();
+
+  const form = document.querySelector('form');
 
   const input = document.querySelector('#url-input');
   const feedback = document.querySelector('.feedback');
@@ -222,13 +184,14 @@ export default async () => {
   const watchedState = onChange(state, (path, value) => {
     if (path === 'form.state') {
       if (value === 'valid') {
+        form.reset();
+        input.focus();
+
         input.classList.remove('is-invalid');
         feedback.classList.add('text-success');
         feedback.classList.remove('text-danger');
         feedsCardTitle.textContent = 'Фиды';
         postsCardTitle.textContent = 'Посты';
-
-        queryFunc();
       } else {
         input.classList.add('is-invalid');
         feedback.classList.remove('text-success');
@@ -238,24 +201,35 @@ export default async () => {
     if (path === 'form.message') {
       feedback.textContent = value;
     }
-  });
+    if (path === 'form.feedList') {
+      const textFile = state.form.feedList[state.form.feedList.length - 1];
+      ulElFeeds.prepend(createFeedsElement(textFile.querySelector('title').textContent, textFile.querySelector('description').textContent));
+    }
+    if (path === 'form.postList') {
+      const item = state.form.postList[state.form.postList.length - 1];
 
-  const form = document.querySelector('form');
+      ulElPosts.prepend(
+        createPostsElement(
+          item.querySelector('title').textContent,
+          item.querySelector('description').textContent,
+          item.querySelector('link').textContent
+        )
+      );
+    }
+  });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const url = formData.get('url');
 
-    state.form.url = url;
-    if (isEmpty(validate(state.form.url))) {
-      if (!state.form.feedList.includes(state.form.url)) {
-        watchedState.form.state = 'invalid';
+    state.form.currentUrl = url;
+    if (isEmpty(validate(state.form.currentUrl))) {
+      if (!state.form.urlList.includes(state.form.currentUrl)) {
         watchedState.form.state = 'valid';
         watchedState.form.message = i18nextInstance.t('success');
-        form.reset();
-        input.focus();
-        state.form.feedList.push(watchedState.form.url);
+        state.form.urlList.push(state.form.currentUrl);
+        queryFunc(state.form.currentUrl);
       } else {
         watchedState.form.state = 'invalid';
         watchedState.form.message = i18nextInstance.t('duplicate');
