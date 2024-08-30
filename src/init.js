@@ -1,16 +1,16 @@
-import './styles.scss';
-import 'bootstrap';
-
 import * as yup from 'yup';
 import * as _ from 'lodash';
 import onChange from 'on-change';
-import keyBy from 'lodash/keyBy.js';
 import uniqueId from 'lodash';
 import isEmpty from 'lodash/isEmpty.js';
 import i18next from 'i18next';
 
+import resources from './locales/index.js';
+import parseFeed from './parseFeed.js';
+import parsePost from './parsePost.js';
+
 export default async () => {
-  const createPostsElement = (title, description, href) => {
+  const renderPosts = (title, description, href) => {
     const idData = uniqueId();
     const liEl = document.createElement('li');
     liEl.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
@@ -51,7 +51,7 @@ export default async () => {
     return liEl;
   };
 
-  const createFeedsElement = (title, description) => {
+  const renderFeed = (title, description) => {
     const liEl = document.createElement('li');
     liEl.classList.add('list-group-item', 'border-0', 'border-end-0');
     const h3El = document.createElement('h3');
@@ -63,30 +63,31 @@ export default async () => {
     liEl.append(h3El, pEl);
     return liEl;
   };
+
+  const getURL = (url) => {
+    return `https://allorigins.hexlet.app/get?disableCache=true&url=` + `${encodeURIComponent(url)}`;
+  };
+
   const queryFunc = (url) => {
-    fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+    fetch(getURL(url))
       .then((response) => {
         if (response.ok) return response.json();
         throw new Error('Network response was not ok.');
       })
       .then((data) => {
-        const textFile = parserFunc(data.contents);
-        if (textFile.querySelector('rss') !== null && textFile.querySelector('title') !== null) {
-          watchedState.form.state = 'valid';
+        const feedItem = parseFeed(data.contents);
+        if (feedItem.rss) {
+          watchedState.form.status = 'valid';
           watchedState.form.message = i18nextInstance.t('success');
-          state.form.urlList.push(state.form.currentUrl);
-
-          watchedState.form.feedList.push(textFile);
-          const items = textFile.querySelectorAll('item');
-          items.forEach((item) => {
-            if (!state.form.postLinkList.includes(item.querySelector('link').textContent)) {
-              const link = item.querySelector('link').textContent;
-              state.form.postLinkList.push(link);
-              watchedState.form.postList.push(item);
-            }
+          state.form.urlList.push(url);
+          watchedState.feedList.push(feedItem);
+          feedItem.items.forEach((item) => {
+            const postItem = parsePost(item);
+            state.form.postLinkList.push(postItem.link);
+            watchedState.postList.push(postItem);
           });
         } else {
-          watchedState.form.state = 'invalid';
+          watchedState.form.status = 'invalid';
           watchedState.form.message = i18nextInstance.t('validityRss');
         }
       })
@@ -96,19 +97,18 @@ export default async () => {
   };
 
   const delayQueryFunc = (url) => {
-    fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+    fetch(getURL(url))
       .then((response) => {
         if (response.ok) return response.json();
         throw new Error('Network response was not ok.');
       })
       .then((data) => {
-        const textFile = parserFunc(data.contents);
-        const items = textFile.querySelectorAll('item');
-        items.forEach((item) => {
-          if (!state.form.postLinkList.includes(item.querySelector('link').textContent)) {
-            const link = item.querySelector('link').textContent;
-            state.form.postLinkList.push(link);
-            watchedState.form.postList.push(item);
+        const feedItem = parseFeed(data.contents);
+        feedItem.items.forEach((item) => {
+          const postItem = parsePost(item);
+          if (!state.form.postLinkList.includes(postItem.link)) {
+            state.form.postLinkList.push(postItem.link);
+            watchedState.postList.push(postItem);
           }
         });
       });
@@ -125,54 +125,53 @@ export default async () => {
     }, 5000);
   };
 
-  const parserFunc = (data) => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(data, 'application/xml');
-    return xmlDoc;
-  };
+  // yup.setLocale({
+  //   string: {
+  //     required: 'Не должно быть пустым',
+  //     default: '?????????',
+  //   },
+  // });
+
+  const schema = yup.string().url().required();
 
   const validate = (fields) => {
     try {
-      schema.validateSync(fields, { abortEarly: false });
+      schema.validateSync(fields, { abortEarly: false }); // notOneOf проверка на дубликат (не разобрался)
       return {};
     } catch (e) {
-      return keyBy(e.inner, 'path');
+      console.log(e.errors);
+      return e;
     }
   };
 
-  const i18nextInstance = i18next.createInstance();
+  const i18nextInstance = i18next.createInstance(); // заменить на промисы (не разобрался)
   await i18nextInstance.init({
     lng: 'ru',
     debug: true,
-    resources: {
-      ru: {
-        translation: {
-          success: 'RSS успешно загружен',
-          duplicate: 'RSS уже существует',
-          // empty: 'Не должно быть пустым', // Форма и так не даёт отправить пустое поле
-          validityUrl: 'Ссылка должна быть валидным URL',
-          validityRss: 'Ресурс не содержит валидный RSS',
-          viewing: 'Просмотр',
-          networkError: 'Ошибка сети',
-        },
-      },
-    },
+    resources,
   });
 
   const state = {
     form: {
-      state: '',
-      currentUrl: '',
-      urlList: [],
-      feedList: [],
-      postList: [],
-      postLinkList: [],
+      status: '',
+      urlList: [], // убрать
+      postLinkList: [], // убрать
+
       descriptionList: {},
       message: '',
     },
+    feedList: [],
+    postList: [],
+    modal: {},
+    // В слое ui нужно как-то отслеживать нажата ли ссылка и делать ее серой если да
+    uiState: {
+      // accordion: [
+      //   { companyId: 1, visibility: 'hidden' },
+      //   { companyId: 2, visibility: 'shown' },
+      //   { companyId: 3, visibility: 'hidden' },
+      // ],
+    },
   };
-
-  const schema = yup.string().required().url();
 
   const form = document.querySelector('form');
 
@@ -188,7 +187,8 @@ export default async () => {
   const ulElPosts = posts.querySelector('ul');
 
   const watchedState = onChange(state, (path, value) => {
-    if (path === 'form.state') {
+    // в отдельный файл
+    if (path === 'form.status') {
       if (value === 'valid') {
         form.reset();
         input.focus();
@@ -207,20 +207,13 @@ export default async () => {
     if (path === 'form.message') {
       feedback.textContent = value;
     }
-    if (path === 'form.feedList') {
-      const textFile = state.form.feedList[state.form.feedList.length - 1];
-      ulElFeeds.prepend(createFeedsElement(textFile.querySelector('title').textContent, textFile.querySelector('description').textContent));
+    if (path === 'feedList') {
+      const feedItem = value[value.length - 1]; // const feedItem = state.feedList[state.feedList.length - 1];
+      ulElFeeds.prepend(renderFeed(feedItem.title, feedItem.description));
     }
-    if (path === 'form.postList') {
-      const item = state.form.postList[state.form.postList.length - 1];
-
-      ulElPosts.prepend(
-        createPostsElement(
-          item.querySelector('title').textContent,
-          item.querySelector('description').textContent,
-          item.querySelector('link').textContent
-        )
-      );
+    if (path === 'postList') {
+      const postItem = value[value.length - 1]; // const postItem = state.postList[state.postList.length - 1];
+      ulElPosts.prepend(renderPosts(postItem.title, postItem.description, postItem.link));
     }
   });
 
@@ -228,17 +221,15 @@ export default async () => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const url = formData.get('url');
-
-    state.form.currentUrl = url;
-    if (isEmpty(validate(state.form.currentUrl))) {
-      if (!state.form.urlList.includes(state.form.currentUrl)) {
-        queryFunc(state.form.currentUrl);
+    if (isEmpty(validate(url))) {
+      if (!state.form.urlList.includes(url)) {
+        queryFunc(url);
       } else {
-        watchedState.form.state = 'invalid';
+        watchedState.form.status = 'invalid';
         watchedState.form.message = i18nextInstance.t('duplicate');
       }
     } else {
-      watchedState.form.state = 'invalid';
+      watchedState.form.status = 'invalid';
       watchedState.form.message = i18nextInstance.t('validityUrl');
     }
   });
