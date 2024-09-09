@@ -1,9 +1,7 @@
 import * as yup from 'yup';
 import * as _ from 'lodash';
-import onChange from 'on-change';
-import uniqueId from 'lodash';
-import isEmpty from 'lodash/isEmpty.js';
 import i18next from 'i18next';
+import onChange from 'on-change';
 
 import resources from './locales/index.js';
 import parseFeed from './parseFeed.js';
@@ -18,20 +16,21 @@ export default () => {
       resources,
     })
     .then(() => {
-      const renderPosts = (title, description, href) => {
-        const idData = uniqueId();
+      const renderPost = (title, description, link) => {
+        const idData = _.uniqueId();
         const liEl = document.createElement('li');
         liEl.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
         const aEl = document.createElement('a');
         aEl.classList.add('fw-bold');
-        aEl.setAttribute('href', href);
+        aEl.setAttribute('href', link);
         aEl.setAttribute('target', '_blank');
         aEl.setAttribute('rel', 'noopener noreferrer');
         aEl.setAttribute('data-id', idData);
         aEl.textContent = title;
         aEl.addEventListener('click', (e) => {
-          aEl.classList.remove('fw-bold');
-          aEl.classList.add('fw-normal', 'link-secondary');
+          if (!state.uiState.posts.includes(link)) {
+            watchedState.uiState.posts.push(link);
+          }
         });
 
         const btnEl = document.createElement('button');
@@ -41,20 +40,13 @@ export default () => {
         btnEl.setAttribute('data-bs-target', '#modal');
         btnEl.setAttribute('data-id', idData);
         btnEl.textContent = i18nextInstance.t('viewing');
-        btnEl.addEventListener('click', (e) => {
-          aEl.classList.remove('fw-bold');
-          aEl.classList.add('fw-normal', 'link-secondary');
-          const elId = btnEl.getAttribute('data-id');
-          const modalTitle = document.querySelector('.modal-title');
-          modalTitle.textContent = document.querySelector(`a[data-id="${elId}"]`).textContent;
-
-          const modalBody = document.querySelector('.modal-body');
-          modalBody.textContent = state.form.descriptionList[elId].description;
-
-          const fullArticle = document.querySelector('.full-article');
-          fullArticle.setAttribute('href', state.form.descriptionList[elId].link);
+        state.modalWindow.modalList[idData] = { title, description, link };
+        btnEl.addEventListener('click', (event) => {
+          if (!state.uiState.posts.includes(link)) {
+            watchedState.uiState.posts.push(link);
+          }
+          watchedState.modalWindow.active = event.target.getAttribute('data-id');
         });
-        state.form.descriptionList[idData] = { description, link: href };
         liEl.append(aEl, btnEl);
         return liEl;
       };
@@ -146,20 +138,17 @@ export default () => {
       const state = {
         form: {
           status: '',
-          descriptionList: {},
           message: '',
         },
         feedList: [],
         postList: [],
-        // modal: {},
-        // В слое ui нужно как-то отслеживать нажата ли ссылка и делать ее серой если да
-        // uiState: {
-        //   accordion: [
-        //     { companyId: 1, visibility: 'hidden' },
-        //     { companyId: 2, visibility: 'shown' },
-        //     { companyId: 3, visibility: 'hidden' },
-        //   ],
-        // },
+        modalWindow: {
+          active: '',
+          modalList: {},
+        },
+        uiState: {
+          posts: [],
+        },
       };
 
       yup.setLocale({
@@ -191,19 +180,6 @@ export default () => {
         }
       };
 
-      const form = document.querySelector('form');
-
-      const input = document.querySelector('#url-input');
-      const feedback = document.querySelector('.feedback');
-
-      const feeds = document.querySelector('.feeds');
-      const feedsCardTitle = feeds.querySelector('.card-title');
-      const ulElFeeds = feeds.querySelector('ul');
-
-      const posts = document.querySelector('.posts');
-      const postsCardTitle = posts.querySelector('.card-title');
-      const ulElPosts = posts.querySelector('ul');
-
       const watchedState = onChange(state, (path, value) => {
         // в отдельный файл
         if (path === 'form.status') {
@@ -231,15 +207,48 @@ export default () => {
         }
         if (path === 'postList') {
           const postItem = value[value.length - 1]; // const postItem = state.postList[state.postList.length - 1];
-          ulElPosts.prepend(renderPosts(postItem.title, postItem.description, postItem.link));
+          ulElPosts.prepend(renderPost(postItem.title, postItem.description, postItem.link));
+        }
+
+        if (path === 'uiState.posts') {
+          const link = value[value.length - 1];
+          const aEl = document.querySelector(`a[href="${link}"]`);
+          aEl.classList.remove('fw-bold');
+          aEl.classList.add('fw-normal', 'link-secondary');
+        }
+
+        if (path === 'modalWindow.active') {
+          const elId = value;
+
+          const modalTitle = document.querySelector('.modal-title');
+          modalTitle.textContent = state.modalWindow.modalList[elId].title;
+
+          const modalBody = document.querySelector('.modal-body');
+          modalBody.textContent = state.modalWindow.modalList[elId].description;
+
+          const fullArticle = document.querySelector('.full-article');
+          fullArticle.setAttribute('href', state.modalWindow.modalList[elId].link);
         }
       });
+
+      const input = document.querySelector('#url-input');
+      const feedback = document.querySelector('.feedback');
+
+      const feeds = document.querySelector('.feeds');
+      const feedsCardTitle = feeds.querySelector('.card-title');
+      const ulElFeeds = feeds.querySelector('ul');
+
+      const posts = document.querySelector('.posts');
+      const postsCardTitle = posts.querySelector('.card-title');
+      const ulElPosts = posts.querySelector('ul');
+
+      const form = document.querySelector('form');
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const url = formData.get('url');
-        if (isEmpty(validate(url))) {
+        if (_.isEmpty(validate(url))) {
           queryFunc(url);
         }
       });
