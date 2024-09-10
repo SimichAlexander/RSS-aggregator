@@ -5,8 +5,7 @@ import i18next from 'i18next';
 import resources from './locales/index.js';
 import parseFeed from './parseFeed.js';
 import parsePost from './parsePost.js';
-
-import watchedState from './watchedState.js';
+import watcher from './watcher.js';
 
 export default () => {
   const i18nextInstance = i18next.createInstance();
@@ -17,6 +16,38 @@ export default () => {
       resources,
     })
     .then(() => {
+      const state = {
+        form: {
+          status: '',
+          message: '',
+        },
+        feedList: [],
+        postList: [],
+        modalWindow: {
+          active: '',
+          modalList: {},
+        },
+        uiState: {
+          posts: [],
+        },
+      };
+
+      const elements = {
+        form: document.querySelector('form'),
+        input: document.querySelector('#url-input'),
+        feedback: document.querySelector('.feedback'),
+        feeds: document.querySelector('.feeds'),
+        posts: document.querySelector('.posts'),
+        feedsCardTitle: document.querySelector('.feeds .card-title'),
+        ulElFeeds: document.querySelector('.feeds ul'),
+        postsCardTitle: document.querySelector('.posts .card-title'),
+        ulElPosts: document.querySelector('.posts ul'),
+        modalTitle: document.querySelector('.modal-title'),
+        modalBody: document.querySelector('.modal-body'),
+        fullArticle: document.querySelector('.full-article'),
+      };
+
+      const watchedState = watcher(elements, state, i18nextInstance);
       const getURL = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
 
       const getUrlList = (feedList) => feedList.map((feedItem) => feedItem.url);
@@ -45,7 +76,6 @@ export default () => {
       const validate = (fields) => {
         try {
           const schema = yup.string().url().required().notOneOf(getUrlList(watchedState.feedList));
-          // перенес сюда, чтобы getUrlList(state.feedList) каждый раз брался актуальный
           schema.validateSync(fields, { abortEarly: false });
           return {};
         } catch (e) {
@@ -61,6 +91,7 @@ export default () => {
           })
           .then((data) => {
             const feedItem = parseFeed(data.contents);
+            watchedState.form.status = 'valid';
             if (feedItem.isRss) {
               watchedState.form.status = 'valid';
               watchedState.form.message = i18nextInstance.t('success');
@@ -80,9 +111,7 @@ export default () => {
           });
       };
 
-      const form = document.querySelector('form');
-
-      form.addEventListener('submit', (e) => {
+      elements.form.addEventListener('submit', (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const url = formData.get('url');
@@ -109,7 +138,7 @@ export default () => {
       };
 
       const delay = () => {
-        if (getUrlList(watchedState.feedList).length !== 0) {
+        if (watchedState.feedList.length !== 0) {
           getUrlList(watchedState.feedList).forEach((item) => {
             delayQueryFunc(item);
           });
