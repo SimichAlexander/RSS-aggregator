@@ -1,4 +1,5 @@
 import onChange from 'on-change';
+import * as _ from 'lodash';
 
 export default (elements, state, i18nextInstance) => {
   const renderPost = (title, description, link) => {
@@ -55,34 +56,46 @@ export default (elements, state, i18nextInstance) => {
     liEl.append(h3El, pEl);
     return liEl;
   };
+  const form = elements.form;
+  const input = elements.input;
+  const feedback = elements.feedback;
+  const feedsCardTitle = elements.feedsCardTitle;
+  const postsCardTitle = elements.postsCardTitle;
+  const ulElFeeds = elements.ulElFeeds;
+  const ulElPosts = elements.ulElPosts;
+
+  const modalTitle = elements.modalTitle;
+  const modalBody = elements.modalBody;
+  const fullArticle = elements.fullArticle;
 
   const watchedState = onChange(state, (path, value) => {
     if (path === 'form.status') {
       if (value === 'valid') {
-        elements.form.reset();
-        elements.input.focus();
+        form.reset();
+        input.focus();
+        input.classList.remove('is-invalid');
 
-        elements.input.classList.remove('is-invalid');
-        elements.feedback.classList.add('text-success');
-        elements.feedback.classList.remove('text-danger');
-        elements.feedsCardTitle.textContent = 'Фиды';
-        elements.postsCardTitle.textContent = 'Посты';
+        feedback.classList.add('text-success');
+        feedback.classList.remove('text-danger');
+
+        feedsCardTitle.textContent = 'Фиды';
+        postsCardTitle.textContent = 'Посты';
       } else {
-        elements.input.classList.add('is-invalid');
-        elements.feedback.classList.remove('text-success');
-        elements.feedback.classList.add('text-danger');
+        input.classList.add('is-invalid');
+        feedback.classList.remove('text-success');
+        feedback.classList.add('text-danger');
       }
     }
     if (path === 'form.message') {
-      elements.feedback.textContent = value;
+      feedback.textContent = value;
     }
     if (path === 'feedList') {
       const feedItem = value[value.length - 1];
-      elements.ulElFeeds.prepend(renderFeed(feedItem.title, feedItem.description));
+      ulElFeeds.prepend(renderFeed(feedItem.title, feedItem.description));
     }
     if (path === 'postList') {
       const postItem = value[value.length - 1];
-      elements.ulElPosts.prepend(renderPost(postItem.title, postItem.description, postItem.link));
+      ulElPosts.prepend(renderPost(postItem.title, postItem.description, postItem.link));
     }
 
     if (path === 'uiState.posts') {
@@ -94,9 +107,9 @@ export default (elements, state, i18nextInstance) => {
 
     if (path === 'modalWindow.active') {
       const elId = value;
-      elements.modalTitle.textContent = state.modalWindow.modalList[elId].title;
-      elements.modalBody.textContent = state.modalWindow.modalList[elId].description;
-      elements.fullArticle.setAttribute('href', state.modalWindow.modalList[elId].link);
+      modalTitle.textContent = state.modalWindow.modalList[elId].title;
+      modalBody.textContent = state.modalWindow.modalList[elId].description;
+      fullArticle.setAttribute('href', state.modalWindow.modalList[elId].link);
     }
   });
 
