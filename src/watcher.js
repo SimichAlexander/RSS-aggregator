@@ -56,17 +56,17 @@ export default (elements, state, i18nextInstance) => {
     liEl.append(h3El, pEl);
     return liEl;
   };
-  const form = elements.form;
-  const input = elements.input;
-  const feedback = elements.feedback;
-  const feedsCardTitle = elements.feedsCardTitle;
-  const postsCardTitle = elements.postsCardTitle;
-  const ulElFeeds = elements.ulElFeeds;
-  const ulElPosts = elements.ulElPosts;
+  const { form } = elements;
+  const { input } = elements;
+  const { feedback } = elements;
+  const { feedsCardTitle } = elements;
+  const { postsCardTitle } = elements;
+  const { ulElFeeds } = elements;
+  const { ulElPosts } = elements;
 
-  const modalTitle = elements.modalTitle;
-  const modalBody = elements.modalBody;
-  const fullArticle = elements.fullArticle;
+  const { modalTitle } = elements;
+  const { modalBody } = elements;
+  const { fullArticle } = elements;
 
   const watchedState = onChange(state, (path, value) => {
     if (path === 'form.status') {
