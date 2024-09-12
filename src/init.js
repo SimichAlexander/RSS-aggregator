@@ -24,7 +24,7 @@ export default () => {
         feedList: [],
         postList: [],
         modalWindow: {
-          active: '',
+          active: [],
           modalList: [],
         },
         uiState: {

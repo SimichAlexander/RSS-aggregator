@@ -2,7 +2,7 @@ import onChange from 'on-change';
 import * as _ from 'lodash';
 
 export default (elements, state, i18nextInstance) => {
-  const renderPost = (title, description, link) => {
+  const renderPost = (title, description, link, watchedState) => {
     const idData = _.uniqueId();
     const liEl = document.createElement('li');
     liEl.classList.add(
@@ -34,12 +34,18 @@ export default (elements, state, i18nextInstance) => {
     btnEl.setAttribute('data-bs-target', '#modal');
     btnEl.setAttribute('data-id', idData);
     btnEl.textContent = i18nextInstance.t('viewing');
-    watchedState.modalWindow.modalList.push({ idData, title, description, link });
+    watchedState.modalWindow.modalList.push({
+      idData,
+      title,
+      description,
+      link,
+    });
     btnEl.addEventListener('click', (event) => {
       if (!watchedState.uiState.posts.includes(link)) {
         watchedState.uiState.posts.push(link);
       }
-      watchedState.modalWindow.active = event.target.getAttribute('data-id');
+      // watchedState.modalWindow.active = event.target.getAttribute('data-id');
+      watchedState.modalWindow.active.push(event.target.getAttribute('data-id'));
     });
 
     liEl.append(aEl, btnEl);
@@ -109,11 +115,10 @@ export default (elements, state, i18nextInstance) => {
     }
 
     if (path === 'modalWindow.active') {
-      const elId = value;
+      const elId = value[value.length - 1];
       watchedState.modalWindow.modalList.forEach((item) => {
         if (item.idData === elId) {
           modalTitle.textContent = item.title;
-          // можно ли так? использовать watchgedState внутри него самого
           modalBody.textContent = item.description;
           fullArticle.setAttribute('href', item.link);
         }
