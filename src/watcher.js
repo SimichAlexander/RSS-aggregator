@@ -2,20 +2,7 @@ import onChange from 'on-change';
 import * as _ from 'lodash';
 
 export default (elements, state, i18nextInstance) => {
-  // const func1 = (link) => {
-  //   if (!watchedState.uiState.posts.includes(link)) {
-  //     watchedState.uiState.posts.push(link);
-  //   }
-  // };
-
-  // const func2 = (event, link) => {
-  //   if (!watchedState.uiState.posts.includes(link)) {
-  //     watchedState.uiState.posts.push(link);
-  //   }
-  //   watchedState.modalWindow.active = event.target.getAttribute('data-id');
-  // };
-
-  const renderPost = (title, description, link, watchedState) => {
+  const renderPost = (title, description, link) => {
     const idData = _.uniqueId();
     const liEl = document.createElement('li');
     liEl.classList.add(
@@ -33,9 +20,6 @@ export default (elements, state, i18nextInstance) => {
     aEl.setAttribute('rel', 'noopener noreferrer');
     aEl.setAttribute('data-id', idData);
     aEl.textContent = title;
-    // aEl.addEventListener('click', () => {
-    //   func1(link);
-    // });
 
     aEl.addEventListener('click', () => {
       if (!watchedState.uiState.posts.includes(link)) {
@@ -51,10 +35,6 @@ export default (elements, state, i18nextInstance) => {
     btnEl.setAttribute('data-id', idData);
     btnEl.textContent = i18nextInstance.t('viewing');
     watchedState.modalWindow.modalList.push({ idData, title, description, link });
-    // btnEl.addEventListener('click', (event) => {
-    //   func2(event, link);
-    // });
-
     btnEl.addEventListener('click', (event) => {
       if (!watchedState.uiState.posts.includes(link)) {
         watchedState.uiState.posts.push(link);
