@@ -50,7 +50,7 @@ export default (elements, state, i18nextInstance) => {
     btnEl.setAttribute('data-bs-target', '#modal');
     btnEl.setAttribute('data-id', idData);
     btnEl.textContent = i18nextInstance.t('viewing');
-    watchedState.modalWindow.modalList[idData] = { title, description, link };
+    watchedState.modalWindow.modalList.push({ idData, title, description, link });
     // btnEl.addEventListener('click', (event) => {
     //   func2(event, link);
     // });
@@ -117,7 +117,8 @@ export default (elements, state, i18nextInstance) => {
     }
     if (path === 'postList') {
       const postItem = value[value.length - 1];
-      ulElPosts.prepend(renderPost(postItem.title, postItem.description, postItem.link, watchedState));
+      const { title, description, link } = postItem;
+      ulElPosts.prepend(renderPost(title, description, link, watchedState));
     }
 
     if (path === 'uiState.posts') {
@@ -129,9 +130,14 @@ export default (elements, state, i18nextInstance) => {
 
     if (path === 'modalWindow.active') {
       const elId = value;
-      modalTitle.textContent = watchedState.modalWindow.modalList[elId].title; // можно ли так? использовать watchgedState внутри него же
-      modalBody.textContent = watchedState.modalWindow.modalList[elId].description;
-      fullArticle.setAttribute('href', watchedState.modalWindow.modalList[elId].link);
+      watchedState.modalWindow.modalList.forEach((item) => {
+        if (item.idData === elId) {
+          modalTitle.textContent = item.title;
+          // можно ли так? использовать watchgedState внутри него самого
+          modalBody.textContent = item.description;
+          fullArticle.setAttribute('href', item.link);
+        }
+      });
     }
   });
 
