@@ -2,7 +2,20 @@ import onChange from 'on-change';
 import * as _ from 'lodash';
 
 export default (elements, state, i18nextInstance) => {
-  const renderPost = (title, description, link) => {
+  // const func1 = (link) => {
+  //   if (!watchedState.uiState.posts.includes(link)) {
+  //     watchedState.uiState.posts.push(link);
+  //   }
+  // };
+
+  // const func2 = (event, link) => {
+  //   if (!watchedState.uiState.posts.includes(link)) {
+  //     watchedState.uiState.posts.push(link);
+  //   }
+  //   watchedState.modalWindow.active = event.target.getAttribute('data-id');
+  // };
+
+  const renderPost = (title, description, link, watchedState) => {
     const idData = _.uniqueId();
     const liEl = document.createElement('li');
     liEl.classList.add(
@@ -20,8 +33,12 @@ export default (elements, state, i18nextInstance) => {
     aEl.setAttribute('rel', 'noopener noreferrer');
     aEl.setAttribute('data-id', idData);
     aEl.textContent = title;
+    // aEl.addEventListener('click', () => {
+    //   func1(link);
+    // });
+
     aEl.addEventListener('click', () => {
-      if (!state.uiState.posts.includes(link)) {
+      if (!watchedState.uiState.posts.includes(link)) {
         watchedState.uiState.posts.push(link);
       }
     });
@@ -33,13 +50,18 @@ export default (elements, state, i18nextInstance) => {
     btnEl.setAttribute('data-bs-target', '#modal');
     btnEl.setAttribute('data-id', idData);
     btnEl.textContent = i18nextInstance.t('viewing');
-    state.modalWindow.modalList[idData] = { title, description, link };
+    watchedState.modalWindow.modalList[idData] = { title, description, link };
+    // btnEl.addEventListener('click', (event) => {
+    //   func2(event, link);
+    // });
+
     btnEl.addEventListener('click', (event) => {
-      if (!state.uiState.posts.includes(link)) {
+      if (!watchedState.uiState.posts.includes(link)) {
         watchedState.uiState.posts.push(link);
       }
       watchedState.modalWindow.active = event.target.getAttribute('data-id');
     });
+
     liEl.append(aEl, btnEl);
     return liEl;
   };
@@ -95,7 +117,7 @@ export default (elements, state, i18nextInstance) => {
     }
     if (path === 'postList') {
       const postItem = value[value.length - 1];
-      ulElPosts.prepend(renderPost(postItem.title, postItem.description, postItem.link));
+      ulElPosts.prepend(renderPost(postItem.title, postItem.description, postItem.link, watchedState));
     }
 
     if (path === 'uiState.posts') {
@@ -107,9 +129,9 @@ export default (elements, state, i18nextInstance) => {
 
     if (path === 'modalWindow.active') {
       const elId = value;
-      modalTitle.textContent = state.modalWindow.modalList[elId].title;
-      modalBody.textContent = state.modalWindow.modalList[elId].description;
-      fullArticle.setAttribute('href', state.modalWindow.modalList[elId].link);
+      modalTitle.textContent = watchedState.modalWindow.modalList[elId].title; // можно ли так? использовать watchgedState внутри него же
+      modalBody.textContent = watchedState.modalWindow.modalList[elId].description;
+      fullArticle.setAttribute('href', watchedState.modalWindow.modalList[elId].link);
     }
   });
 
