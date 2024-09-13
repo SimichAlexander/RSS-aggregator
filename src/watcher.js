@@ -96,7 +96,7 @@ export default (elements, state, i18nextInstance) => {
 
     if (path === 'modalWindow.active') {
       const id = value;
-      const post = state.postList.find((post) => post.id === id);
+      const post = state.postList.find((item) => item.id === id);
       modalTitle.textContent = post.title;
       modalBody.textContent = post.description;
       fullArticle.setAttribute('href', post.link);
