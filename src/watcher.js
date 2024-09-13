@@ -1,9 +1,7 @@
 import onChange from 'on-change';
-import * as _ from 'lodash';
 
 export default (elements, state, i18nextInstance) => {
-  const renderPost = (title, description, link, watchedState) => {
-    const idData = _.uniqueId();
+  const renderPost = ({ id, title, link }) => {
     const liEl = document.createElement('li');
     liEl.classList.add(
       'list-group-item',
@@ -18,36 +16,16 @@ export default (elements, state, i18nextInstance) => {
     aEl.setAttribute('href', link);
     aEl.setAttribute('target', '_blank');
     aEl.setAttribute('rel', 'noopener noreferrer');
-    aEl.setAttribute('data-id', idData);
+    aEl.setAttribute('data-id', id);
     aEl.textContent = title;
-
-    aEl.addEventListener('click', () => {
-      if (!watchedState.uiState.posts.includes(link)) {
-        watchedState.uiState.posts.push(link);
-      }
-    });
 
     const btnEl = document.createElement('button');
     btnEl.classList.add('btn', 'btn-outline-primary', 'btn-sm');
     btnEl.setAttribute('type', 'button');
     btnEl.setAttribute('data-bs-toggle', 'modal');
     btnEl.setAttribute('data-bs-target', '#modal');
-    btnEl.setAttribute('data-id', idData);
+    btnEl.setAttribute('data-id', id);
     btnEl.textContent = i18nextInstance.t('viewing');
-    watchedState.modalWindow.modalList.push({
-      idData,
-      title,
-      description,
-      link,
-    });
-    btnEl.addEventListener('click', (event) => {
-      if (!watchedState.uiState.posts.includes(link)) {
-        watchedState.uiState.posts.push(link);
-      }
-      // watchedState.modalWindow.active = event.target.getAttribute('data-id');
-      watchedState.modalWindow.active.push(event.target.getAttribute('data-id'));
-    });
-
     liEl.append(aEl, btnEl);
     return liEl;
   };
@@ -64,6 +42,7 @@ export default (elements, state, i18nextInstance) => {
     liEl.append(h3El, pEl);
     return liEl;
   };
+
   const { form } = elements;
   const { input } = elements;
   const { feedback } = elements;
@@ -99,30 +78,28 @@ export default (elements, state, i18nextInstance) => {
     }
     if (path === 'feedList') {
       const feedItem = value[value.length - 1];
-      ulElFeeds.prepend(renderFeed(feedItem.title, feedItem.description));
+      const { title, description } = feedItem;
+      ulElFeeds.prepend(renderFeed(title, description));
     }
     if (path === 'postList') {
       const postItem = value[value.length - 1];
-      const { title, description, link } = postItem;
-      ulElPosts.prepend(renderPost(title, description, link, watchedState));
+      const { id, title, link } = postItem;
+      ulElPosts.prepend(renderPost({ id, title, link }));
     }
 
     if (path === 'uiState.posts') {
-      const link = value[value.length - 1];
-      const aEl = document.querySelector(`a[href="${link}"]`);
+      const id = value[value.length - 1];
+      const aEl = document.querySelector(`a[data-id="${id}"]`);
       aEl.classList.remove('fw-bold');
       aEl.classList.add('fw-normal', 'link-secondary');
     }
 
     if (path === 'modalWindow.active') {
-      const elId = value[value.length - 1];
-      watchedState.modalWindow.modalList.forEach((item) => {
-        if (item.idData === elId) {
-          modalTitle.textContent = item.title;
-          modalBody.textContent = item.description;
-          fullArticle.setAttribute('href', item.link);
-        }
-      });
+      const id = value;
+      const post = state.postList.find((post) => post.id === id);
+      modalTitle.textContent = post.title;
+      modalBody.textContent = post.description;
+      fullArticle.setAttribute('href', post.link);
     }
   });
 

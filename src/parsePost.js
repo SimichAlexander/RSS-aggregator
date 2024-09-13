@@ -1,7 +1,6 @@
 export default (data) => {
-  const postItem = {};
-  postItem.title = data.querySelector('title').textContent;
-  postItem.description = data.querySelector('description').textContent;
-  postItem.link = data.querySelector('link').textContent;
-  return postItem;
+  const title = data.querySelector('title').textContent;
+  const description = data.querySelector('description').textContent;
+  const link = data.querySelector('link').textContent;
+  return { title, description, link };
 };

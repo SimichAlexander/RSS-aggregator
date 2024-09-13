@@ -24,8 +24,7 @@ export default () => {
         feedList: [],
         postList: [],
         modalWindow: {
-          active: [],
-          modalList: [],
+          active: '',
         },
         uiState: {
           posts: [],
@@ -36,8 +35,6 @@ export default () => {
         form: document.querySelector('form'),
         input: document.querySelector('#url-input'),
         feedback: document.querySelector('.feedback'),
-        feeds: document.querySelector('.feeds'),
-        posts: document.querySelector('.posts'),
         feedsCardTitle: document.querySelector('.feeds .card-title'),
         ulElFeeds: document.querySelector('.feeds ul'),
         postsCardTitle: document.querySelector('.posts .card-title'),
@@ -98,8 +95,9 @@ export default () => {
               feedItem.url = url;
               watchedState.feedList.push(feedItem);
               feedItem.items.forEach((item) => {
+                const id = _.uniqueId();
                 const postItem = parsePost(item);
-                watchedState.postList.push(postItem);
+                watchedState.postList.push({ id, ...postItem });
               });
             } else {
               watchedState.form.status = 'invalid';
@@ -120,6 +118,21 @@ export default () => {
         }
       });
 
+      elements.ulElPosts.addEventListener('click', (e) => {
+        if (!('id' in e.target.dataset)) {
+          return;
+        }
+        const { id } = e.target.dataset;
+
+        if (!watchedState.uiState.posts.includes(id)) {
+          watchedState.uiState.posts.push(id);
+        }
+
+        if (e.target.classList.contains('btn')) {
+          watchedState.modalWindow.active = id;
+        }
+      });
+
       const delayQueryFunc = (url) => {
         fetch(getURL(url))
           .then((response) => {
@@ -131,7 +144,8 @@ export default () => {
             feedItem.items.forEach((item) => {
               const postItem = parsePost(item);
               if (!getPostLinkList(watchedState.postList).includes(postItem.link)) {
-                watchedState.postList.push(postItem);
+                const id = _.uniqueId();
+                watchedState.postList.push({ id, ...postItem });
               }
             });
           });
