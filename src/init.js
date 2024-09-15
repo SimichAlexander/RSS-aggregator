@@ -116,7 +116,7 @@ export default () => {
           if (_.isEmpty(res)) {
             fetchPosts(url);
           } else {
-            const key = res.errors[0].key;
+            const { key } = res.errors[0];
             watchedState.form.message = i18nextInstance.t(key);
             watchedState.form.status = 'invalid';
           }
