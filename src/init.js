@@ -7,6 +7,12 @@ import parseFeed from './parseFeed.js';
 import parsePost from './parsePost.js';
 import watcher from './watcher.js';
 
+const getURL = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
+
+const getUrlList = (feedList) => feedList.map((feedItem) => feedItem.url);
+
+const getPostLinkList = (postList) => postList.map((postItem) => postItem.link);
+
 export default () => {
   const i18nextInstance = i18next.createInstance();
   const i18Promise = i18nextInstance
@@ -16,7 +22,7 @@ export default () => {
       resources,
     })
     .then(() => {
-      const state = {
+      const initState = {
         form: {
           status: '',
           message: '',
@@ -32,7 +38,7 @@ export default () => {
       };
 
       const elements = {
-        form: document.querySelector('form'),
+        form: document.querySelector('.rss-form'),
         input: document.querySelector('#url-input'),
         feedback: document.querySelector('.feedback'),
         feedsCardTitle: document.querySelector('.feeds .card-title'),
@@ -44,43 +50,37 @@ export default () => {
         fullArticle: document.querySelector('.full-article'),
       };
 
-      const watchedState = watcher(elements, state, i18nextInstance);
-      const getURL = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
-
-      const getUrlList = (feedList) => feedList.map((feedItem) => feedItem.url);
-
-      const getPostLinkList = (postList) => postList.map((postItem) => postItem.link);
+      const watchedState = watcher(elements, initState, i18nextInstance);
 
       yup.setLocale({
         string: {
-          url: () => {
-            watchedState.form.message = i18nextInstance.t('validityUrl');
-            watchedState.form.status = 'invalid';
-          },
+          url: () => ({
+            key: 'notUrl',
+          }),
         },
         mixed: {
-          required: () => {
-            watchedState.form.message = i18nextInstance.t('empty');
-            watchedState.form.status = 'invalid';
-          },
-          notOneOf: () => {
-            watchedState.form.message = i18nextInstance.t('duplicate');
-            watchedState.form.status = 'invalid';
-          },
+          required: () => ({
+            key: 'empty',
+          }),
+          notOneOf: () => ({
+            key: 'duplicate',
+          }),
         },
       });
 
-      const validate = (fields) => {
-        try {
-          const schema = yup.string().url().required().notOneOf(getUrlList(watchedState.feedList));
-          schema.validateSync(fields, { abortEarly: false });
-          return {};
-        } catch (e) {
-          return e;
-        }
+      const validateURL = (fields, callback) => {
+        const schema = yup.string().url().required().notOneOf(getUrlList(watchedState.feedList));
+        schema
+          .validate(fields, { abortEarly: false })
+          .then(() => {
+            callback({});
+          })
+          .catch((e) => {
+            callback(e);
+          });
       };
 
-      const queryFunc = (url) => {
+      const fetchPosts = (url) => {
         fetch(getURL(url))
           .then((response) => {
             if (response.ok) return response.json();
@@ -88,7 +88,6 @@ export default () => {
           })
           .then((data) => {
             const feedItem = parseFeed(data.contents);
-            watchedState.form.status = 'valid';
             if (feedItem.isRss) {
               watchedState.form.status = 'valid';
               watchedState.form.message = i18nextInstance.t('success');
@@ -101,7 +100,7 @@ export default () => {
               });
             } else {
               watchedState.form.status = 'invalid';
-              watchedState.form.message = i18nextInstance.t('validityRss');
+              watchedState.form.message = i18nextInstance.t('notRss');
             }
           })
           .catch(() => {
@@ -113,9 +112,15 @@ export default () => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const url = formData.get('url');
-        if (_.isEmpty(validate(url))) {
-          queryFunc(url);
-        }
+        validateURL(url, (res) => {
+          if (_.isEmpty(res)) {
+            fetchPosts(url);
+          } else {
+            const key = res.errors[0].key;
+            watchedState.form.message = i18nextInstance.t(key);
+            watchedState.form.status = 'invalid';
+          }
+        });
       });
 
       elements.ulElPosts.addEventListener('click', (e) => {
@@ -133,7 +138,7 @@ export default () => {
         }
       });
 
-      const delayQueryFunc = (url) => {
+      const fetchNewPosts = (url) => {
         fetch(getURL(url))
           .then((response) => {
             if (response.ok) return response.json();
@@ -154,7 +159,7 @@ export default () => {
       const delay = () => {
         if (watchedState.feedList.length !== 0) {
           getUrlList(watchedState.feedList).forEach((item) => {
-            delayQueryFunc(item);
+            fetchNewPosts(item);
           });
         }
         setTimeout(() => {
