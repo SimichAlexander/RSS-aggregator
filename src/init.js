@@ -6,6 +6,7 @@ import resources from './locales/index.js';
 import parseFeed from './parseFeed.js';
 import parsePost from './parsePost.js';
 import watcher from './watcher.js';
+import locale from './locales/locale.js';
 
 const getURL = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
 
@@ -25,7 +26,7 @@ export default () => {
       const initState = {
         form: {
           status: '',
-          message: '',
+          messageKey: '',
         },
         feedList: [],
         postList: [],
@@ -51,22 +52,7 @@ export default () => {
       };
 
       const watchedState = watcher(elements, initState, i18nextInstance);
-
-      yup.setLocale({
-        string: {
-          url: () => ({
-            key: 'notUrl',
-          }),
-        },
-        mixed: {
-          required: () => ({
-            key: 'empty',
-          }),
-          notOneOf: () => ({
-            key: 'duplicate',
-          }),
-        },
-      });
+      yup.setLocale(locale);
 
       const validateURL = (fields, callback) => {
         const schema = yup.string().url().required().notOneOf(getUrlList(watchedState.feedList));
@@ -90,7 +76,8 @@ export default () => {
             const feedItem = parseFeed(data.contents);
             if (feedItem.isRss) {
               watchedState.form.status = 'valid';
-              watchedState.form.message = i18nextInstance.t('success');
+              watchedState.form.messageKey = 'success';
+
               feedItem.url = url;
               watchedState.feedList.push(feedItem);
               feedItem.items.forEach((item) => {
@@ -100,11 +87,11 @@ export default () => {
               });
             } else {
               watchedState.form.status = 'invalid';
-              watchedState.form.message = i18nextInstance.t('notRss');
+              watchedState.form.messageKey = 'notRss';
             }
           })
           .catch(() => {
-            watchedState.form.message = i18nextInstance.t('networkError');
+            watchedState.form.messageKey = 'networkError';
           });
       };
 
@@ -116,8 +103,7 @@ export default () => {
           if (_.isEmpty(res)) {
             fetchPosts(url);
           } else {
-            const { key } = res.errors[0];
-            watchedState.form.message = i18nextInstance.t(key);
+            watchedState.form.messageKey = res.errors[0].key;
             watchedState.form.status = 'invalid';
           }
         });

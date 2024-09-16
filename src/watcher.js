@@ -81,8 +81,8 @@ export default (elements, initState, i18nextInstance) => {
         feedback.classList.add('text-danger');
       }
     }
-    if (path === 'form.message') {
-      feedback.textContent = value;
+    if (path === 'form.messageKey') {
+      feedback.textContent = i18nextInstance.t(initState.form.messageKey);
     }
     if (path === 'feedList') {
       renderFeed();
